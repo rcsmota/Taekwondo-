@@ -67,6 +67,10 @@
   .opt input { accent-color: var(--hong); width: 16px; height: 16px; }
   .opt select { margin-left: auto; background: var(--mat-2); color: var(--dobok); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; font: inherit; font-size: .8rem; }
   .opt.wide { grid-column: 1 / -1; }
+  .voice-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .8rem; color: var(--muted); }
+  .voice-row #voiceStatus { flex: 1; min-width: 0; }
+  .voice-row #voiceStatus.warn { color: var(--belt); }
+  .test { font: inherit; font-weight: 600; font-size: .8rem; color: var(--dobok); background: var(--mat); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
 
   .summary { font-size: .85rem; color: var(--muted); line-height: 1.5; }
   .summary b { color: var(--dobok); }
@@ -160,12 +164,16 @@
       <label class="opt"><input type="checkbox" id="countdown" checked> Contagem 3‑2‑1</label>
       <label class="opt"><input type="checkbox" id="beep" checked> Bip a cada número</label>
       <label class="opt"><input type="checkbox" id="korean" checked> Mostrar em coreano</label>
-      <label class="opt wide"><input type="checkbox" id="voice"> Falar número
+      <label class="opt wide"><input type="checkbox" id="voice" checked> Falar número
         <select id="lang" aria-label="Idioma da voz">
           <option value="pt">Português</option>
           <option value="ko">Coreano</option>
         </select>
       </label>
+      <div class="voice-row">
+        <button type="button" class="test" id="testVoice">Testar voz</button>
+        <span id="voiceStatus">A procurar vozes…</span>
+      </div>
     </div>
 
     <div class="summary" id="summary"></div>
@@ -241,14 +249,57 @@
     o.connect(g).connect(actx.destination);
     o.start(); o.stop(actx.currentTime + dur);
   }
-  function say(n) {
-    if (!$("voice").checked || !("speechSynthesis" in window)) return;
-    const lang = $("lang").value;
-    const u = new SpeechSynthesisUtterance(lang === "ko" ? KR[n] : String(n));
-    u.lang = lang === "ko" ? "ko-KR" : "pt-BR";
-    u.rate = 1.3;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  // Voz: escolhe explicitamente uma voz instalada para o idioma (as vozes carregam de forma assíncrona)
+  const synth = window.speechSynthesis || null;
+  let voices = [];
+  const norm = l => (l || "").toLowerCase().replace("_", "-");
+  function pickVoice(lang) {
+    const list = voices.filter(v => norm(v.lang).startsWith(lang));
+    if (lang === "pt") return list.find(v => norm(v.lang) === "pt-pt") || list[0];
+    return list[0];
   }
+  function updateVoiceStatus() {
+    const el = $("voiceStatus"), lang = $("lang").value;
+    let msg, warn = false;
+    if (!synth) { msg = "Este navegador não suporta voz sintetizada."; warn = true; }
+    else if (!voices.length) { msg = "Nenhuma voz detetada ainda. Toque em Testar voz."; }
+    else {
+      const v = pickVoice(lang);
+      if (v) msg = "Voz: " + v.name + " (" + v.lang + ")";
+      else { msg = (lang === "ko" ? "Não há voz coreana" : "Não há voz portuguesa") + " instalada neste dispositivo. Vai usar a voz padrão."; warn = true; }
+    }
+    el.textContent = msg; el.classList.toggle("warn", warn);
+  }
+  function loadVoices() { try { voices = synth ? synth.getVoices() : []; } catch (e) { voices = []; } updateVoiceStatus(); }
+  if (synth) {
+    loadVoices();
+    try { synth.addEventListener("voiceschanged", loadVoices); } catch (e) { synth.onvoiceschanged = loadVoices; }
+    setTimeout(loadVoices, 700);
+  } else updateVoiceStatus();
+  $("lang").onchange = updateVoiceStatus;
+
+  function speak(text, lang, volume = 1) {
+    if (!synth) return;
+    const u = new SpeechSynthesisUtterance(text);
+    const v = pickVoice(lang);
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === "ko" ? "ko-KR" : "pt-PT";
+    u.rate = 1.15; u.volume = volume;
+    const go = () => { try { synth.resume(); synth.speak(u); } catch (e) {} };
+    // Chrome descarta a fala se speak() vier logo após cancel(); dá-lhe um pequeno intervalo.
+    if (synth.speaking || synth.pending) { synth.cancel(); setTimeout(go, 60); } else go();
+  }
+  function say(n) {
+    if (!$("voice").checked) return;
+    const lang = $("lang").value;
+    speak(lang === "ko" ? KR[n] : PT[n], lang);
+  }
+  $("testVoice").onclick = () => {
+    loadVoices();
+    const lang = $("lang").value;
+    speak(lang === "ko" ? "하나, 둘, 셋" : "um, dois, três", lang);
+    if (!synth) return;
+    setTimeout(() => { if (!synth.speaking && !synth.pending) { loadVoices(); } }, 1500);
+  };
 
   // Execução
   const stage = $("stage"), numEl = $("num"), krEl = $("numkr");
@@ -278,6 +329,8 @@
       beep: $("beep").checked, korean: $("korean").checked,
     };
     try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
+    // Desbloqueia a voz dentro do clique (iOS/Safari só permitem fala iniciada por um gesto)
+    if ($("voice").checked && synth) speak(" ", $("lang").value, 0);
     stage.hidden = false; $("endActions").hidden = true;
     try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); } catch (e) {}
     try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {}
