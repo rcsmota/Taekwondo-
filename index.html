@@ -1,0 +1,367 @@
+<title>Treino de Reação TKD</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@500;700&display=swap">
+<style>
+  /* Layout: tatame escuro, cartão de configuração central; em execução, número em ecrã inteiro com fundo alternando Hong (vermelho) / Chung (azul). */
+  :root {
+    --mat: #12151c;
+    --mat-2: #1b2029;
+    --line: #2c3340;
+    --dobok: #f3f1ea;
+    --muted: #9aa3b2;
+    --hong: #d62b3a;
+    --chung: #1f5fd1;
+    --belt: #f2c230;
+    --display: "Big Shoulders Display", "Impact", "Arial Narrow", sans-serif;
+    --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --kr: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--mat);
+    color: var(--dobok);
+    font-family: var(--body);
+    font-size: 15px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px;
+    background-image:
+      linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,.025) 50%, transparent 50.5%),
+      linear-gradient(0deg, transparent 49.5%, rgba(255,255,255,.025) 50%, transparent 50.5%);
+    background-size: 120px 120px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  header { display: flex; align-items: center; gap: 14px; }
+  .taeguk { width: 46px; height: 46px; flex: none; }
+  h1 { font-family: var(--display); font-weight: 900; font-size: 2.2rem; letter-spacing: .02em; line-height: 1; margin: 0; text-transform: uppercase; }
+  .sub { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+
+  .panel { background: var(--mat-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 22px; }
+  .field { display: flex; flex-direction: column; gap: 10px; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  label, .label { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .value { font-family: var(--display); font-weight: 700; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .value small { font-family: var(--body); font-size: .8rem; color: var(--muted); font-weight: 500; margin-left: 3px; }
+
+  .seg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .seg button {
+    font-family: var(--display); font-weight: 900; font-size: 1.7rem;
+    padding: 10px 0 8px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--mat); color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .seg button span { font-family: var(--kr); font-size: .62rem; font-weight: 500; letter-spacing: 0; }
+  .seg button.in { color: var(--dobok); border-color: #3b4555; }
+  .seg button.on { background: var(--dobok); color: var(--mat); border-color: var(--dobok); }
+  .seg button:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--belt); outline-offset: 2px; }
+
+  input[type=range] { width: 100%; accent-color: var(--hong); height: 28px; }
+  .ticks { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--dobok); background: var(--mat); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .opt input { accent-color: var(--hong); width: 16px; height: 16px; }
+  .opt select { margin-left: auto; background: var(--mat-2); color: var(--dobok); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; font: inherit; font-size: .8rem; }
+  .opt.wide { grid-column: 1 / -1; }
+
+  .summary { font-size: .85rem; color: var(--muted); line-height: 1.5; }
+  .summary b { color: var(--dobok); }
+
+  .go {
+    font-family: var(--display); font-weight: 900; font-size: 2rem; letter-spacing: .06em; text-transform: uppercase;
+    border: 0; border-radius: 14px; padding: 18px; cursor: pointer; color: #fff;
+    background: linear-gradient(90deg, var(--hong) 0 50%, var(--chung) 50% 100%);
+    box-shadow: 0 6px 0 rgba(0,0,0,.35);
+  }
+  .go:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+  .go .kr { font-family: var(--kr); font-size: 1rem; font-weight: 700; margin-left: 10px; opacity: .85; letter-spacing: 0; }
+
+  /* Ecrã de execução */
+  #stage {
+    position: fixed; inset: 0; z-index: 50; background: var(--mat);
+    display: flex; flex-direction: column; color: #fff; transition: background-color .12s linear;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    user-select: none; -webkit-user-select: none;
+  }
+  #stage.hong { background: var(--hong); }
+  #stage.chung { background: var(--chung); }
+  .bar { height: 10px; background: rgba(0,0,0,.35); flex: none; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--belt); }
+  .stage-top { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; gap: 12px; flex: none; }
+  .clock { font-family: var(--display); font-weight: 700; font-size: clamp(1.4rem, 4vw, 2.6rem); font-variant-numeric: tabular-nums; }
+  .count { font-size: .85rem; opacity: .85; }
+  .stop { font-family: var(--body); font-weight: 600; font-size: .95rem; border: 2px solid rgba(255,255,255,.8); background: rgba(0,0,0,.2); color: #fff; padding: 10px 18px; border-radius: 999px; cursor: pointer; }
+  .num-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; overflow: hidden; }
+  #num {
+    font-family: var(--display); font-weight: 900; line-height: .8;
+    font-size: min(82vh, 95vw); font-variant-numeric: tabular-nums;
+    text-shadow: 0 .03em 0 rgba(0,0,0,.25);
+  }
+  #num.pop { animation: pop .18s ease-out; }
+  @keyframes pop { from { transform: scale(.82); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+  #numkr { font-family: var(--kr); font-weight: 700; font-size: clamp(1.2rem, 5vh, 3rem); opacity: .8; margin-top: 1vh; }
+  #numkr:empty { display: none; }
+  .end-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 4vh; }
+  .end-actions button { font-family: var(--display); font-weight: 900; font-size: 1.6rem; text-transform: uppercase; letter-spacing: .05em; padding: 14px 26px; border-radius: 12px; border: 0; cursor: pointer; }
+  .again { background: var(--dobok); color: var(--mat); }
+  .back { background: transparent; color: var(--dobok); border: 2px solid var(--dobok) !important; }
+  #num.small { font-size: min(30vh, 22vw); line-height: 1; }
+
+  @media (prefers-reduced-motion: reduce) { #num.pop { animation: none; } #stage { transition: none; } }
+  @media (max-width: 420px) { .opts { grid-template-columns: 1fr; } .seg button { font-size: 1.4rem; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <svg class="taeguk" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" fill="#1f5fd1"/>
+      <path d="M50 2 A48 48 0 0 1 50 98 A24 24 0 0 1 50 50 A24 24 0 0 0 50 2Z" fill="#d62b3a" transform="rotate(-34 50 50)"/>
+      <circle cx="50" cy="50" r="48" fill="none" stroke="#f3f1ea" stroke-width="3"/>
+    </svg>
+    <div>
+      <h1>Treino de Reação</h1>
+      <div class="sub">Números aleatórios para drills de chutes e combinações</div>
+    </div>
+  </header>
+
+  <section class="panel" aria-label="Configuração">
+    <div class="field">
+      <div class="field-head">
+        <span class="label" id="lbl-max">Números de 1 até</span>
+        <span class="value" id="v-max">6</span>
+      </div>
+      <div class="seg" id="seg" role="radiogroup" aria-labelledby="lbl-max"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <label for="delay">Intervalo entre números</label>
+        <span class="value"><span id="v-delay">1,5</span><small>s</small></span>
+      </div>
+      <input type="range" id="delay" min="0.5" max="5" step="0.1" value="1.5">
+      <div class="ticks"><span>0,5 s</span><span>5 s</span></div>
+    </div>
+
+    <div class="field">
+      <div class="field-head">
+        <label for="total">Tempo total</label>
+        <span class="value"><span id="v-total">30</span><small>s</small></span>
+      </div>
+      <input type="range" id="total" min="5" max="60" step="1" value="30">
+      <div class="ticks"><span>5 s</span><span>60 s</span></div>
+    </div>
+
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="norepeat" checked> Não repetir seguido</label>
+      <label class="opt"><input type="checkbox" id="countdown" checked> Contagem 3‑2‑1</label>
+      <label class="opt"><input type="checkbox" id="beep" checked> Bip a cada número</label>
+      <label class="opt"><input type="checkbox" id="korean" checked> Mostrar em coreano</label>
+      <label class="opt wide"><input type="checkbox" id="voice"> Falar número
+        <select id="lang" aria-label="Idioma da voz">
+          <option value="pt">Português</option>
+          <option value="ko">Coreano</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <button class="go" id="start">Sijak <span class="kr">시작</span></button>
+  </section>
+</div>
+
+<div id="stage" hidden>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="stage-top">
+    <div>
+      <div class="clock" id="clock">0,0 s</div>
+      <div class="count" id="count"></div>
+    </div>
+    <button class="stop" id="stop">Parar (Esc)</button>
+  </div>
+  <div class="num-box">
+    <div id="num">1</div>
+    <div id="numkr"></div>
+    <div class="end-actions" id="endActions" hidden>
+      <button class="again" id="again">Repetir</button>
+      <button class="back" id="back">Ajustar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const KR = ["", "하나", "둘", "셋", "넷", "다섯", "여섯"];
+  const KR_LAT = ["", "hana", "dul", "set", "net", "daseot", "yeoseot"];
+  const PT = ["", "um", "dois", "três", "quatro", "cinco", "seis"];
+  const $ = id => document.getElementById(id);
+  const fmt = n => n.toFixed(1).replace(".", ",");
+
+  let max = 6;
+  const seg = $("seg");
+  for (let i = 1; i <= 6; i++) {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "n" + i; b.setAttribute("role", "radio");
+    b.innerHTML = i + "<span>" + KR[i] + "</span>";
+    b.title = KR_LAT[i];
+    b.onclick = () => { max = i; render(); };
+    seg.appendChild(b);
+  }
+
+  const delayEl = $("delay"), totalEl = $("total");
+  function render() {
+    [...seg.children].forEach((b, idx) => {
+      const n = idx + 1;
+      b.classList.toggle("on", n === max);
+      b.classList.toggle("in", n < max);
+      b.setAttribute("aria-checked", n === max);
+    });
+    $("v-max").textContent = max;
+    const d = +delayEl.value, t = +totalEl.value;
+    $("v-delay").textContent = fmt(d);
+    $("v-total").textContent = t;
+    const shows = Math.max(1, Math.ceil(t / d - 1e-9));
+    $("summary").innerHTML = `Vai sortear entre <b>1 e ${max}</b>, trocando a cada <b>${fmt(d)} s</b>, durante <b>${t} s</b> — cerca de <b>${shows}</b> números.`;
+  }
+  delayEl.oninput = totalEl.oninput = render;
+  render();
+
+  // Áudio
+  let actx = null;
+  function beep(freq = 880, dur = 0.09, vol = 0.25) {
+    if (!actx) return;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "square"; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }
+  function say(n) {
+    if (!$("voice").checked || !("speechSynthesis" in window)) return;
+    const lang = $("lang").value;
+    const u = new SpeechSynthesisUtterance(lang === "ko" ? KR[n] : String(n));
+    u.lang = lang === "ko" ? "ko-KR" : "pt-BR";
+    u.rate = 1.3;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }
+
+  // Execução
+  const stage = $("stage"), numEl = $("num"), krEl = $("numkr");
+  let timers = [], raf = 0, wake = null, runId = 0, cfg = null;
+
+  function pick(prev) {
+    if (cfg.max === 1) return 1;
+    let n;
+    do { n = 1 + Math.floor(Math.random() * cfg.max); } while (cfg.norepeat && n === prev);
+    return n;
+  }
+  function show(n, idx) {
+    numEl.classList.remove("small");
+    numEl.textContent = n;
+    krEl.textContent = cfg.korean ? KR[n] : "";
+    stage.className = idx % 2 ? "chung" : "hong";
+    numEl.classList.remove("pop"); void numEl.offsetWidth; numEl.classList.add("pop");
+    if (cfg.beep) beep(n * 110 + 440);
+    say(n);
+  }
+  function clearAll() { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); }
+
+  async function start() {
+    cfg = {
+      max, delay: +delayEl.value, total: +totalEl.value,
+      norepeat: $("norepeat").checked, countdown: $("countdown").checked,
+      beep: $("beep").checked, korean: $("korean").checked,
+    };
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
+    stage.hidden = false; $("endActions").hidden = true;
+    try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); } catch (e) {}
+    try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {}
+    run();
+  }
+
+  function run() {
+    clearAll();
+    const my = ++runId;
+    $("endActions").hidden = true;
+    $("bar").style.width = "0%";
+    $("clock").textContent = fmt(cfg.total) + " s";
+    $("count").textContent = "";
+    let pre = 0;
+    if (cfg.countdown) {
+      pre = 3000;
+      [3, 2, 1].forEach((c, i) => timers.push(setTimeout(() => {
+        if (my !== runId) return;
+        stage.className = ""; numEl.classList.add("small");
+        numEl.textContent = c; krEl.textContent = KR[c];
+        numEl.classList.remove("pop"); void numEl.offsetWidth; numEl.classList.add("pop");
+        if (cfg.beep) beep(520, 0.12);
+      }, i * 1000)));
+    }
+    timers.push(setTimeout(() => { if (my === runId) drill(my); }, pre));
+  }
+
+  function drill(my) {
+    const t0 = performance.now();
+    const totalMs = cfg.total * 1000, stepMs = cfg.delay * 1000;
+    let idx = 0, prev = 0;
+    const next = () => {
+      if (my !== runId) return;
+      if (idx * stepMs >= totalMs - 1) return;
+      prev = pick(prev); show(prev, idx); idx++;
+      $("count").textContent = idx + (idx === 1 ? " número" : " números");
+      const due = idx * stepMs;
+      if (due < totalMs) timers.push(setTimeout(next, Math.max(0, due - (performance.now() - t0))));
+    };
+    next();
+    timers.push(setTimeout(() => finish(my, idx), totalMs));
+    const tick = () => {
+      if (my !== runId) return;
+      const el = Math.min(performance.now() - t0, totalMs);
+      $("bar").style.width = (el / totalMs * 100) + "%";
+      $("clock").textContent = fmt((totalMs - el) / 1000) + " s";
+      if (el < totalMs) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function finish(my) {
+    if (my !== runId) return;
+    clearAll();
+    stage.className = "";
+    numEl.classList.add("small");
+    numEl.textContent = "Fim";
+    krEl.textContent = "그만 · geuman";
+    $("bar").style.width = "100%";
+    $("clock").textContent = "0,0 s";
+    $("endActions").hidden = false;
+    if (cfg.beep) { beep(660, 0.15); setTimeout(() => beep(440, 0.35), 180); }
+  }
+
+  async function exit() {
+    runId++; clearAll();
+    try { speechSynthesis.cancel(); } catch (e) {}
+    stage.hidden = true;
+    try { await wake?.release(); } catch (e) {} wake = null;
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) {}
+  }
+
+  $("start").onclick = start;
+  $("again").onclick = run;
+  $("back").onclick = $("stop").onclick = exit;
+  document.addEventListener("keydown", e => {
+    if (stage.hidden) { if (e.key === "Enter" && e.target.tagName !== "BUTTON") start(); return; }
+    if (e.key === "Escape") exit();
+    if (e.key === " " && !$("endActions").hidden) { e.preventDefault(); run(); }
+  });
+  document.addEventListener("visibilitychange", async () => {
+    if (!stage.hidden && document.visibilityState === "visible" && !wake) {
+      try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {}
+    }
+  });
+})();
+</script>
