@@ -1,6 +1,6 @@
 // SC Treino — service worker: guarda a app para funcionar sem internet.
 // Ao alterar index.html, suba a versão para os telemóveis receberem a atualização.
-const VERSION = "sc-treino-v1";
+const VERSION = "sc-treino-v2";
 const CORE = [
   "./",
   "./index.html",
